@@ -241,9 +241,10 @@ export const chatApi = {
 
 // Upload API
 export const uploadApi = {
-  // Get all uploads
-  getAll: async () => {
-    return fetchWithAuth('/uploads');
+  // Get all uploads, optionally filtered by workspace
+  getAll: async (workspaceId = null) => {
+    const url = workspaceId ? `/uploads?workspace_id=${workspaceId}` : '/uploads';
+    return fetchWithAuth(url);
   },
 
   // Get a specific upload
@@ -252,7 +253,7 @@ export const uploadApi = {
   },
 
   // Upload a file
-  upload: async (file, description = '') => {
+  upload: async (file, description = '', workspaceId = null) => {
     const token = getToken();
 
     const formData = new FormData();
@@ -260,6 +261,10 @@ export const uploadApi = {
 
     if (description) {
       formData.append('description', description);
+    }
+
+    if (workspaceId) {
+      formData.append('workspace_id', workspaceId);
     }
 
     const response = await fetch(`${API_BASE_URL}/uploads`, {
@@ -331,6 +336,22 @@ export const reportsApi = {
     return fetchWithAuth(`/reports/${id}`, {
       method: 'DELETE',
     });
+  },
+
+  // Generate a report
+  generate: async (type, documentIds) => {
+    return fetchWithAuth('/reports/generate', {
+      method: 'POST',
+      body: JSON.stringify({
+        report_type: type,
+        document_ids: documentIds
+      }),
+    });
+  },
+
+  // Get documents that can be used for report generation
+  getDocuments: async () => {
+    return fetchWithAuth('/uploads');
   },
 };
 

@@ -154,7 +154,7 @@ export function ReportsPage() {
                           Delete
                         </Button>
                         <Button
-                          onClick={() => window.open(`http://localhost:8000/reports/${report.file_path}`, '_blank')}
+                          onClick={() => window.open(`http://localhost:8000/files/${report.file_path}`, '_blank')}
                           size="sm"
                         >
                           <Download className="mr-2 h-4 w-4" />
@@ -208,7 +208,7 @@ export function ReportsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(`http://localhost:8000/reports/${report.file_path}`, '_blank')}
+                          onClick={() => window.open(`http://localhost:8000/files/${report.file_path}`, '_blank')}
                         >
                           <Download className="mr-2 h-4 w-4" />
                           Download

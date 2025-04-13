@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
-import { Upload, X, FileText, Check } from "lucide-react";
-import { uploadApi } from "../services/api";
+import { Upload, X, FileText, Check, Users } from "lucide-react";
+import { uploadApi, workspaceApi } from "../services/api";
 import { useApi } from "../hooks/useApi";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 export function UploadPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const initialWorkspaceId = searchParams.get('workspace_id') ? Number(searchParams.get('workspace_id')) : null;
+
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [formData, setFormData] = useState({
     companyName: "",
     reportType: "",
+    workspaceId: initialWorkspaceId
   });
 
   const {
@@ -26,15 +32,29 @@ export function UploadPage() {
   } = useApi(uploadApi.getAll);
 
   const {
+    data: workspaces,
+    loading: workspacesLoading,
+    error: workspacesError,
+    execute: fetchWorkspaces
+  } = useApi(workspaceApi.getAll);
+
+  const {
     loading: deleting,
     error: deleteError,
     execute: deleteUpload
   } = useApi(uploadApi.delete);
 
-  // Initial load of uploads
+  // Initial load of uploads and workspaces
   useEffect(() => {
-    fetchUploads();
-  }, [fetchUploads]);
+    fetchWorkspaces();
+
+    // Fetch uploads based on selected workspace
+    if (formData.workspaceId) {
+      fetchUploads(formData.workspaceId);
+    } else {
+      fetchUploads();
+    }
+  }, [fetchUploads, fetchWorkspaces, formData.workspaceId]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -82,21 +102,45 @@ export function UploadPage() {
     const description = `Company: ${formData.companyName}, Type: ${formData.reportType}`;
 
     // Upload the file
-    const result = await uploadFile(uploadedFile, description);
+    const result = await uploadFile(
+      uploadedFile,
+      description,
+      formData.workspaceId ? Number(formData.workspaceId) : null
+    );
 
     if (result) {
       // Clear form and refresh uploads list
       setUploadedFile(null);
-      setFormData({ companyName: "", reportType: "" });
-      fetchUploads();
+      setFormData(prev => ({
+        ...prev,
+        companyName: "",
+        reportType: ""
+      }));
+
+      // Re-fetch uploads with the current workspace filter
+      if (formData.workspaceId) {
+        fetchUploads(Number(formData.workspaceId));
+      } else {
+        fetchUploads();
+      }
     }
   };
 
   const handleDeleteUpload = async (id) => {
     if (window.confirm("Are you sure you want to delete this file?")) {
       await deleteUpload(id);
-      fetchUploads();
+      // Re-fetch uploads with the current workspace filter
+      if (formData.workspaceId) {
+        fetchUploads(Number(formData.workspaceId));
+      } else {
+        fetchUploads();
+      }
     }
+  };
+
+  const handleWorkspaceChange = (e) => {
+    const workspaceId = e.target.value ? Number(e.target.value) : null;
+    setFormData(prev => ({ ...prev, workspaceId }));
   };
 
   return (
@@ -106,6 +150,33 @@ export function UploadPage() {
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4 rounded-lg border bg-card p-6">
+            {/* Workspace Selector */}
+            <div>
+              <label htmlFor="workspaceId" className="mb-2 block text-sm font-medium">
+                Upload to Workspace
+              </label>
+              <select
+                id="workspaceId"
+                name="workspaceId"
+                value={formData.workspaceId || ""}
+                onChange={handleWorkspaceChange}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">My Personal Uploads</option>
+                {!workspacesLoading && workspaces && workspaces.map(workspace => (
+                  <option key={workspace.id} value={workspace.id}>
+                    {workspace.name}
+                  </option>
+                ))}
+              </select>
+              {workspacesLoading && (
+                <p className="mt-1 text-xs text-muted-foreground">Loading workspaces...</p>
+              )}
+              {workspacesError && (
+                <p className="mt-1 text-xs text-destructive">{workspacesError}</p>
+              )}
+            </div>
+
             <div
               className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-muted"
                 } ${uploadedFile ? "bg-secondary/50" : ""}`}
@@ -223,7 +294,19 @@ export function UploadPage() {
         </form>
 
         <div className="rounded-lg border bg-card p-6">
-          <h2 className="mb-4 text-xl font-semibold">Your Uploads</h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold">
+              {formData.workspaceId ? `Workspace Uploads` : `Your Uploads`}
+            </h2>
+            {formData.workspaceId && workspaces && (
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Users className="mr-1 h-4 w-4" />
+                <span>
+                  {workspaces.find(w => w.id === Number(formData.workspaceId))?.name || 'Workspace'}
+                </span>
+              </div>
+            )}
+          </div>
 
           {uploadsLoading ? (
             <div className="flex h-40 items-center justify-center">
@@ -249,22 +332,15 @@ export function UploadPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
-                      size="sm"
-                      onClick={() => window.open(`http://localhost:8000/uploads/${file.file_path}`, '_blank')}
-                    >
-                      View
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
+                      size="icon"
                       onClick={() => handleDeleteUpload(file.id)}
                       disabled={deleting}
+                      className="text-muted-foreground hover:text-destructive"
                     >
-                      Delete
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -273,7 +349,7 @@ export function UploadPage() {
           ) : (
             <div className="flex h-40 flex-col items-center justify-center rounded-lg border border-dashed">
               <FileText className="mb-2 h-8 w-8 text-muted-foreground" />
-              <p className="text-muted-foreground">No files uploaded yet</p>
+              <p className="text-muted-foreground">No uploads found</p>
             </div>
           )}
         </div>

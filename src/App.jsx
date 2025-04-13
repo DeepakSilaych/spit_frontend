@@ -7,6 +7,8 @@ import { UploadPage } from "./pages/UploadPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { WorkspacePage } from "./pages/WorkspacePage";
+import { CreateWorkspacePage } from "./pages/CreateWorkspacePage";
 
 function ProtectedRoute({ children }) {
   const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -42,8 +44,12 @@ function App() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/chat" element={<ChatPage />} />
+                <Route path="/chat/:chatId" element={<ChatPage />} />
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/workspace" element={<WorkspacePage />} />
+                <Route path="/workspace/create" element={<CreateWorkspacePage />} />
+                <Route path="/workspace/:workspaceId" element={<WorkspacePage />} />
               </Routes>
             </MainLayout>
           </ProtectedRoute>
