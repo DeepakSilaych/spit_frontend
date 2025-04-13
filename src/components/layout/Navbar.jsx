@@ -63,8 +63,6 @@ export function Navbar() {
     setCurrentWorkspace(workspace);
     setShowDropdown(false);
     localStorage.setItem('selectedWorkspaceId', workspace.id);
-    // Navigate to workspace page
-    navigate(`/workspace/${workspace.id}`);
   };
 
   const handleCreateWorkspace = () => {

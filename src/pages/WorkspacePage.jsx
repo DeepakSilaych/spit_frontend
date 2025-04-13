@@ -71,6 +71,7 @@ export function WorkspacePage() {
   const [activities, setActivities] = useState([]);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showFilesSection, setShowFilesSection] = useState(true);
+  const [showChatsSection, setShowChatsSection] = useState(true);
 
   // Use API hooks
   const {
@@ -112,6 +113,13 @@ export function WorkspacePage() {
     execute: deleteFile
   } = useApi(uploadApi.delete);
 
+  const {
+    data: workspaceChats,
+    loading: chatsLoading,
+    error: chatsError,
+    execute: fetchWorkspaceChats
+  } = useApi(chatApi.getAll);
+
   // Fetch workspaces and current workspace
   useEffect(() => {
     fetchWorkspaces();
@@ -119,8 +127,9 @@ export function WorkspacePage() {
     if (workspaceId) {
       fetchWorkspace(workspaceId);
       fetchWorkspaceFiles(Number(workspaceId));
+      fetchWorkspaceChats(Number(workspaceId));
     }
-  }, [workspaceId, fetchWorkspaces, fetchWorkspace, fetchWorkspaceFiles]);
+  }, [workspaceId, fetchWorkspaces, fetchWorkspace, fetchWorkspaceFiles, fetchWorkspaceChats]);
 
   // If no workspaceId is provided, redirect to the first workspace
   useEffect(() => {
@@ -163,7 +172,7 @@ export function WorkspacePage() {
   const handleCreateChat = () => {
     if (workspace) {
       // Navigate to chat page with workspace ID
-      navigate(`/chat/new?workspace_id=${workspace.id}`);
+      navigate(`/workspace/${workspace.id}/chat`);
     }
   };
 
@@ -278,7 +287,7 @@ export function WorkspacePage() {
         </div>
         <div className="flex gap-2">
           {/* Only show delete button for non-personal workspaces */}
-          {!isPersonalWorkspace() && workspace.owner_id === Number(JSON.parse(localStorage.getItem("user") || "{}").user_id) && (
+          {!isPersonalWorkspace() && workspace.owner_id === Number(JSON.parse(localStorage.getItem("user") || "{}").id) && (
             <Button
               variant="outline"
               className="flex items-center gap-2 text-destructive hover:bg-destructive/10"
@@ -445,6 +454,70 @@ export function WorkspacePage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Chats Section */}
+      <div className="mb-6 rounded-lg border bg-card p-4">
+        <div
+          className="flex cursor-pointer items-center justify-between pb-2"
+          onClick={() => setShowChatsSection(!showChatsSection)}
+        >
+          <h2 className="text-xl font-bold">Chats</h2>
+          <Button variant="ghost" size="sm">
+            {showChatsSection ? "Hide" : "Show"}
+          </Button>
+        </div>
+
+        {showChatsSection && (
+          <>
+            <div className="mb-4">
+              <Button
+                onClick={handleCreateChat}
+                className="w-full"
+                variant="default"
+              >
+                <Plus className="mr-2 h-4 w-4" /> New Chat
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {chatsLoading ? (
+                <div className="text-center p-4">
+                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full inline-block mr-2"></div>
+                  Loading chats...
+                </div>
+              ) : chatsError ? (
+                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  {chatsError}
+                </div>
+              ) : workspaceChats && workspaceChats.length > 0 ? (
+                workspaceChats.map((chat) => (
+                  <div
+                    key={chat.id}
+                    className="flex items-center justify-between rounded-md border p-3 hover:bg-secondary/50 cursor-pointer"
+                    onClick={() => navigate(`/workspace/${workspaceId}/chat/${chat.id}`)}
+                  >
+                    <div className="flex items-center">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary mr-3">
+                        <MessageSquare className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{chat.title || `Chat #${chat.id}`}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Created {new Date(chat.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center p-4 text-muted-foreground">
+                  No chats in this workspace yet. Create a new chat to get started.
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

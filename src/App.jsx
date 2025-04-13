@@ -9,6 +9,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { WorkspacePage } from "./pages/WorkspacePage";
 import { CreateWorkspacePage } from "./pages/CreateWorkspacePage";
+import { ToastProvider } from "./components/ui/use-toast";
 
 function ProtectedRoute({ children }) {
   const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -32,30 +33,72 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<RegisterPage />} />
-        <Route path="/register" element={<Navigate to="/signup" replace />} />
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<RegisterPage />} />
+          <Route path="/register" element={<Navigate to="/signup" replace />} />
 
-        <Route path="/*" element={
-          <ProtectedRoute>
-            <MainLayout>
+          <Route path="/*" element={
+            <ProtectedRoute>
               <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/chat" element={<ChatPage />} />
-                <Route path="/chat/:chatId" element={<ChatPage />} />
-                <Route path="/upload" element={<UploadPage />} />
-                <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/workspace" element={<WorkspacePage />} />
-                <Route path="/workspace/create" element={<CreateWorkspacePage />} />
-                <Route path="/workspace/:workspaceId" element={<WorkspacePage />} />
+                <Route path="/" element={
+                  <MainLayout>
+                    <HomePage />
+                  </MainLayout>
+                } />
+                <Route path="/chat" element={
+                  <MainLayout>
+                    <ChatPage />
+                  </MainLayout>
+                } />
+                <Route path="/chat/:chatId" element={
+                  <MainLayout>
+                    <ChatPage />
+                  </MainLayout>
+                } />
+                <Route path="/workspace/:workspaceId/chat" element={
+                  <MainLayout>
+                    <ChatPage />
+                  </MainLayout>
+                } />
+                <Route path="/workspace/:workspaceId/chat/:chatId" element={
+                  <MainLayout>
+                    <ChatPage />
+                  </MainLayout>
+                } />
+                <Route path="/upload" element={
+                  <MainLayout>
+                    <UploadPage />
+                  </MainLayout>
+                } />
+                <Route path="/reports" element={
+                  <MainLayout>
+                    <ReportsPage />
+                  </MainLayout>
+                } />
+                <Route path="/workspace" element={
+                  <MainLayout>
+                    <WorkspacePage />
+                  </MainLayout>
+                } />
+                <Route path="/workspace/create" element={
+                  <MainLayout>
+                    <CreateWorkspacePage />
+                  </MainLayout>
+                } />
+                <Route path="/workspace/:workspaceId" element={
+                  <MainLayout>
+                    <WorkspacePage />
+                  </MainLayout>
+                } />
               </Routes>
-            </MainLayout>
-          </ProtectedRoute>
-        } />
-      </Routes>
-    </BrowserRouter>
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 

@@ -211,31 +211,72 @@ export const chatApi = {
   },
 
   // Create WebSocket connection
-  createWebSocketConnection: (chatId) => {
-    const token = getToken();
-    if (!token) {
-      throw new Error('Not authenticated');
+  createWebSocketConnection: (chatId, sessionId = null, workspaceId = null) => {
+    // Check for required parameters
+    if (!chatId) {
+      console.error('chatId is required for WebSocket connection');
+      return null;
     }
 
-    const socket = new WebSocket(`${WS_BASE_URL}/chats/ws/${chatId}?token=${token}`);
+    try {
+      const token = getToken();
+      if (!token) {
+        console.error('Not authenticated');
+        return null;
+      }
 
-    return {
-      socket,
+      // Build WebSocket URL with query parameters
+      let wsUrl = `${WS_BASE_URL}/chats/ws/${chatId}?token=${token}`;
 
-      // Send message via WebSocket
-      sendMessage: (content) => {
-        if (socket.readyState === WebSocket.OPEN) {
-          socket.send(JSON.stringify({ content }));
-        } else {
-          throw new Error('WebSocket connection is not open');
-        }
-      },
+      // Add session ID if provided
+      if (sessionId) {
+        wsUrl += `&session_id=${sessionId}`;
+      }
 
-      // Close WebSocket connection
-      close: () => {
-        socket.close();
-      },
-    };
+      // Add workspace ID if provided
+      if (workspaceId) {
+        wsUrl += `&workspace_id=${workspaceId}`;
+      }
+
+      const socket = new WebSocket(wsUrl);
+
+      return {
+        socket,
+
+        // Send message via WebSocket
+        sendMessage: (content, visualizationOptions = {}) => {
+          if (socket.readyState === WebSocket.OPEN) {
+            // Basic message data
+            const messageData = {
+              content,
+              format: "txt",
+              session_id: sessionId,
+              workspace_id: workspaceId,
+              visualization_options: {
+                include_tables: true,
+                include_graphs: true,
+                ...visualizationOptions
+              }
+            };
+
+            console.log('Sending WebSocket message:', messageData);
+            socket.send(JSON.stringify(messageData));
+          } else {
+            throw new Error('WebSocket connection is not open');
+          }
+        },
+
+        // Close WebSocket connection
+        close: () => {
+          if (socket && socket.readyState !== WebSocket.CLOSED) {
+            socket.close();
+          }
+        },
+      };
+    } catch (error) {
+      console.error('Error creating WebSocket connection:', error);
+      return null;
+    }
   },
 };
 
@@ -300,13 +341,18 @@ export const uploadApi = {
 // Reports API
 export const reportsApi = {
   // Get all reports
-  getAll: async (filters = {}) => {
-    const queryParams = Object.entries(filters)
+  getAll: async (workspaceId = null, filters = {}) => {
+    let queryParams = Object.entries(filters)
       .filter(([_, value]) => value !== null && value !== undefined)
-      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
-      .join('&');
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`);
 
-    const url = queryParams ? `/reports?${queryParams}` : '/reports';
+    // Add workspace_id to query params if provided
+    if (workspaceId) {
+      queryParams.push(`workspace_id=${workspaceId}`);
+    }
+
+    const queryString = queryParams.join('&');
+    const url = queryString ? `/reports?${queryString}` : '/reports';
     return fetchWithAuth(url);
   },
 

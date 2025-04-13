@@ -21,10 +21,10 @@ const NavItem = ({ icon: Icon, label, href, active }) => {
     <Link
       to={href}
       className={cn(
-        "flex flex-col items-center gap-1 px-2 py-3 text-xs font-medium transition-colors rounded-md",
+        "flex flex-col items-center gap-1 px-2 my-2 py-1 w-full rounded-xl text-xs font-medium transition-colors",
         active
-          ? "text-primary bg-primary/10 hover:bg-primary/20 active:bg-primary/30"
-          : "text-gray-700 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200"
+          ? "bg-primary/20"
+          : "text-gray-700 hover:text-gray-900 hover:bg-primary/10"
       )}
     >
       <Icon className="h-5 w-5" />
@@ -43,7 +43,7 @@ export function Sidebar({ className }) {
           <Sparkles className="h-6 w-6 text-blue-900" />
         </div>
       </div>
-      <nav className="flex flex-col items-center gap-2 px-2 py-4">
+      <nav className="flex flex-col items-center gap-2 px-1 py-4">
         {navItems.map((item, index) => (
           <NavItem
             key={index}
